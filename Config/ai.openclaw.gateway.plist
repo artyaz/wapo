@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		ai.openclaw.gateway.plist
+		
+		launchd configuration for the OpenClaw Gateway daemon.
+		Runs as a persistent background service on macOS, binding
+		exclusively to the loopback interface (127.0.0.1:18789).
+		
+		Install:
+		  cp ai.openclaw.gateway.plist ~/Library/LaunchAgents/
+		  launchctl load ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+		
+		Uninstall:
+		  launchctl unload ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+		  rm ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+	-->
+	
+	<key>Label</key>
+	<string>ai.openclaw.gateway</string>
+	
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/node</string>
+		<string>/usr/local/lib/openclaw/gateway/index.js</string>
+		<string>--config</string>
+		<string>~/.wapo/openclaw.config.json</string>
+		<string>--bind</string>
+		<string>127.0.0.1</string>
+		<string>--port</string>
+		<string>18789</string>
+	</array>
+	
+	<!-- Run at login and keep alive -->
+	<key>RunAtLoad</key>
+	<true/>
+	
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+		<key>Crashed</key>
+		<true/>
+	</dict>
+	
+	<!-- Restart throttle: wait 5 seconds between restart attempts -->
+	<key>ThrottleInterval</key>
+	<integer>5</integer>
+	
+	<!-- Environment variables -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>NODE_ENV</key>
+		<string>production</string>
+		<key>OPENCLAW_BIND</key>
+		<string>127.0.0.1</string>
+		<key>OPENCLAW_PORT</key>
+		<string>18789</string>
+	</dict>
+	
+	<!-- Logging -->
+	<key>StandardOutPath</key>
+	<string>/tmp/openclaw-gateway.stdout.log</string>
+	
+	<key>StandardErrorPath</key>
+	<string>/tmp/openclaw-gateway.stderr.log</string>
+	
+	<!-- Working directory -->
+	<key>WorkingDirectory</key>
+	<string>/usr/local/lib/openclaw/gateway</string>
+	
+	<!-- Resource limits -->
+	<key>SoftResourceLimits</key>
+	<dict>
+		<key>NumberOfFiles</key>
+		<integer>4096</integer>
+	</dict>
+	
+	<key>ProcessType</key>
+	<string>Background</string>
+</dict>
+</plist>

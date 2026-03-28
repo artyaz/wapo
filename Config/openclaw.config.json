@@ -1,0 +1,73 @@
+{
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 18789,
+    "bind": "loopback",
+    "protocol": "http",
+    "cors": {
+      "enabled": false
+    }
+  },
+  "agent": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.3,
+    "max_tokens": 16384,
+    "streaming": true
+  },
+  "session": {
+    "isolation": true,
+    "persistence": true,
+    "storage_path": "~/.wapo/sessions",
+    "max_concurrent": 5
+  },
+  "memory": {
+    "enabled": true,
+    "backend": "local",
+    "storage_path": "~/.wapo/memory",
+    "max_entries": 10000
+  },
+  "heartbeat": {
+    "enabled": true,
+    "interval_minutes": 15,
+    "cron_expression": "*/15 * * * *",
+    "endpoint": "http://127.0.0.1:8765/heartbeat",
+    "suppress_ok": true
+  },
+  "plugins": {
+    "composio": {
+      "enabled": true,
+      "config_path": "~/.wapo/composio.json",
+      "auto_oauth": true
+    },
+    "twilio": {
+      "enabled": true,
+      "escalation_threshold_minutes": 10,
+      "voice_call_enabled": true,
+      "note": "Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, and USER_PHONE_NUMBER in environment"
+    }
+  },
+  "mcp": {
+    "servers_directory": "~/.wapo/mcp_servers",
+    "auto_discover": true,
+    "watch_for_changes": true
+  },
+  "security": {
+    "loopback_only": true,
+    "max_request_size_mb": 10,
+    "rate_limit": {
+      "requests_per_minute": 60,
+      "burst": 10
+    }
+  },
+  "logging": {
+    "level": "info",
+    "file": "~/.wapo/logs/gateway.log",
+    "rotate_mb": 50
+  },
+  "system_prompts": {
+    "persona": "You are a highly autonomous, general-purpose digital coworker. While you possess expert development capabilities, your primary directive is to proactively manage the user's digital life—organizing file systems, monitoring communications, checking calendars, and executing background workflows. You operate on a continuous cron-triggered heartbeat. During these heartbeats, you must independently evaluate your task queue and environmental context. If a task requires action, execute it autonomously. If you discover a critical, time-sensitive issue and the user does not acknowledge your text-based notifications, you are explicitly authorized and encouraged to utilize your Voice Call tools (via Twilio/Plivo) to call the user's phone directly to escalate the alert.",
+    "dag_protocol": "You operate within a LangGraph Directed Acyclic Graph (DAG) environment. When faced with a complex user request, you must decompose the objective into independent, parallelizable sub-tasks. You will yield a list of Send instructions to fan-out operations concurrently across your available MCP tools and isolated tmux terminal sessions. Once tasks are dispatched, you must transition into a wait state, halting further action until all parallel branches have successfully merged their updated states.",
+    "security": "You are subjected to a rigorous, hardcoded security blocklist. You are absolutely forbidden from attempting to read, write, traverse, or execute files within any directory outlined in your internal blocklist, notably ~/Library/Keychains, /private/var/db, and ~/Library/Messages (which contains private chat.db records). If a user request or a tool execution suggests that required data resides in these protected locations, you must immediately halt the operation, explicitly classify it as a security boundary violation in your log, and inform the user."
+  }
+}

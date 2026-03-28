@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "example-filesystem": {
+      "id": "filesystem",
+      "name": "Local File System",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~"],
+      "env": {},
+      "capabilities": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "get_file_info"
+      ],
+      "enabled": true
+    }
+  },
+  "_readme": "Add new MCP server configurations here. The Wapo agent watches this directory for changes and dynamically loads new servers at runtime. Each server entry should specify the command to launch the MCP server and its capabilities."
+}
