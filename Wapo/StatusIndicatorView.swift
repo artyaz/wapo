@@ -15,19 +15,31 @@ struct StatusIndicatorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(indicators) { indicator in
-                HStack(spacing: 6) {
+                HStack(alignment: .top, spacing: 6) {
                     if indicator.isLoading {
                         ProgressView()
                             .controlSize(.mini)
+                            .padding(.top, 1)
                     } else {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: indicator.symbolName ?? "checkmark.circle.fill")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
+                            .padding(.top, 1)
                     }
 
-                    Text(indicator.text)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(indicator.text)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+
+                        if let detail = indicator.detail, !detail.isEmpty {
+                            Text(detail)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(3)
+                                .textSelection(.enabled)
+                        }
+                    }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }

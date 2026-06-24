@@ -25,7 +25,7 @@ final class FloatingPanel: NSPanel {
         configure()
     }
 
-    convenience init(size: NSSize = NSSize(width: 380, height: 620)) {
+    convenience init(size: NSSize = NSSize(width: 600, height: 620)) {
         self.init(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.nonactivatingPanel],
@@ -44,8 +44,8 @@ final class FloatingPanel: NSPanel {
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
 
-        // Shadow for depth perception against the desktop
-        hasShadow = true
+        // Keep the shell edge-less so the blur field can fade naturally.
+        hasShadow = false
 
         // Prevent dock icon and mission control appearance
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
@@ -57,14 +57,5 @@ final class FloatingPanel: NSPanel {
 
     // Panel must become key to accept keyboard input
     override var canBecomeKey: Bool { true }
-
-    // Dismiss when focus moves away
-    override func resignKey() {
-        super.resignKey()
-        animator().alphaValue = 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            self?.orderOut(nil)
-            self?.alphaValue = 1
-        }
-    }
+    override var canBecomeMain: Bool { true }
 }

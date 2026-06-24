@@ -9,23 +9,37 @@
 import Foundation
 
 actor WebSocketClient {
-    private let url: URL
+    private let urls: [URL]
     private var task: URLSessionWebSocketTask?
     private let session: URLSession
     private var isActive = false
+    private var currentURLIndex = 0
 
-    init(url: URL) {
-        self.url = url
+    init(urls: [URL]) {
+        self.urls = urls
         self.session = URLSession(configuration: .default)
     }
 
     // MARK: - Connection Lifecycle
 
     func connect() {
-        guard !isActive else { return }
+        guard !isActive, let url = currentURL else { return }
         task = session.webSocketTask(with: url)
         task?.resume()
         isActive = true
+    }
+
+    func ensureConnected() {
+        guard !isActive else { return }
+        connect()
+    }
+
+    func reconnect(rotating: Bool = false) {
+        disconnect()
+        if rotating {
+            advanceURL()
+        }
+        connect()
     }
 
     func disconnect() {
@@ -60,6 +74,16 @@ actor WebSocketClient {
         @unknown default:
             throw WebSocketError.unknownFormat
         }
+    }
+
+    private var currentURL: URL? {
+        guard !urls.isEmpty else { return nil }
+        return urls[currentURLIndex]
+    }
+
+    private func advanceURL() {
+        guard !urls.isEmpty else { return }
+        currentURLIndex = (currentURLIndex + 1) % urls.count
     }
 }
 

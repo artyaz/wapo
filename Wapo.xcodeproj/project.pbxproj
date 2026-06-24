@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5A6D7C5A2F78726100AF8A22 /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 5A6D7C592F78726100AF8A22 /* LICENSE.txt */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		5A6D7BF92F7803DE00AF8A22 /* Wapo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wapo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A6D7C592F78726100AF8A22 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +39,7 @@
 			children = (
 				5A6D7BFB2F7803DE00AF8A22 /* Wapo */,
 				5A6D7BFA2F7803DE00AF8A22 /* Products */,
+				5A6D7C592F78726100AF8A22 /* LICENSE.txt */,
 			);
 			sourceTree = "<group>";
 		};
@@ -55,6 +61,7 @@
 				5A6D7BF52F7803DE00AF8A22 /* Sources */,
 				5A6D7BF62F7803DE00AF8A22 /* Frameworks */,
 				5A6D7BF72F7803DE00AF8A22 /* Resources */,
+				5AF0B0002F8A000100AF8A22 /* Bundle Backend Runtime */,
 			);
 			buildRules = (
 			);
@@ -94,6 +101,8 @@
 			);
 			mainGroup = 5A6D7BF02F7803DE00AF8A22;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5A6D7BFA2F7803DE00AF8A22 /* Products */;
 			projectDirPath = "";
@@ -109,10 +118,57 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A6D7C5A2F78726100AF8A22 /* LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5AF0B0002F8A000100AF8A22 /* Bundle Backend Runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(PROJECT_DIR)/Backend/server.py",
+				"$(PROJECT_DIR)/Backend/stdlib_websocket_server.py",
+				"$(PROJECT_DIR)/Backend/testing_engine.py",
+				"$(PROJECT_DIR)/Backend/orchestrator.py",
+				"$(PROJECT_DIR)/Backend/prompts.py",
+				"$(PROJECT_DIR)/Backend/state.py",
+				"$(PROJECT_DIR)/Backend/security.py",
+				"$(PROJECT_DIR)/Backend/tools.py",
+				"$(PROJECT_DIR)/Backend/terminal.py",
+				"$(PROJECT_DIR)/Backend/mcp_watcher.py",
+				"$(PROJECT_DIR)/Backend/heartbeat.py",
+				"$(PROJECT_DIR)/Backend/requirements.txt",
+			);
+			name = "Bundle Backend Runtime";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/server.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/stdlib_websocket_server.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/testing_engine.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/orchestrator.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/prompts.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/state.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/security.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/tools.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/terminal.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/mcp_watcher.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/heartbeat.py",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Backend/requirements.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\n\nBACKEND_SRC=\"${PROJECT_DIR}/Backend\"\nBACKEND_DST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Backend\"\nFILES=\"server.py stdlib_websocket_server.py testing_engine.py orchestrator.py prompts.py state.py security.py tools.py terminal.py mcp_watcher.py heartbeat.py requirements.txt\"\n\n/bin/mkdir -p \"${BACKEND_DST}\"\n\nfor file in ${FILES}; do\n  /bin/cp -f \"${BACKEND_SRC}/${file}\" \"${BACKEND_DST}/${file}\"\ndone\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5A6D7BF52F7803DE00AF8A22 /* Sources */ = {
@@ -256,6 +312,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Wapo-Info.plist";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -288,6 +345,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Wapo-Info.plist";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

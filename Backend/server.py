@@ -1,9 +1,9 @@
 """
-server.py — WebSocket Server & FastAPI Gateway
+server.py — local backend entrypoint.
 
-Bridges the LangGraph orchestrator to the SwiftUI frontend via persistent
-WebSocket connections. Streams reasoning telemetry, status updates, and
-agent responses in real-time.
+Uses FastAPI/Uvicorn when available. Falls back to a dependency-free stdlib
+HTTP + WebSocket server so the backend-side testing transport still works in
+minimal local environments.
 """
 
 from __future__ import annotations
@@ -11,100 +11,119 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
-
-from orchestrator import agent_graph
-from state import AgentState
+from testing_engine import run_testing_engine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("wapo.server")
+DEFAULT_ENGINE = os.environ.get("WAPO_AGENT_ENGINE", "testing").strip().lower()
+HOST = os.environ.get("WAPO_BACKEND_HOST", "127.0.0.1").strip() or "127.0.0.1"
+PORT = int(os.environ.get("WAPO_BACKEND_PORT", "8765"))
 
-# ---------------------------------------------------------------------------
-# Connection Manager
-# ---------------------------------------------------------------------------
-
-
-class ConnectionManager:
-    """Manages active WebSocket connections."""
-
-    def __init__(self) -> None:
-        self.active: list[WebSocket] = []
-
-    async def connect(self, ws: WebSocket) -> None:
-        await ws.accept()
-        self.active.append(ws)
-        logger.info(f"Client connected. Total: {len(self.active)}")
-
-    def disconnect(self, ws: WebSocket) -> None:
-        self.active.remove(ws)
-        logger.info(f"Client disconnected. Total: {len(self.active)}")
-
-    async def broadcast(self, message: dict) -> None:
-        payload = json.dumps(message)
-        for ws in self.active:
-            try:
-                await ws.send_text(payload)
-            except Exception:
-                pass
+try:
+    from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+    from fastapi.responses import JSONResponse
+except ModuleNotFoundError:
+    FastAPI = None
+    WebSocket = None
+    WebSocketDisconnect = Exception
+    JSONResponse = None
 
 
-manager = ConnectionManager()
+if FastAPI is not None:
+    class ConnectionManager:
+        """Manages active FastAPI WebSocket connections."""
 
-# ---------------------------------------------------------------------------
-# FastAPI App
-# ---------------------------------------------------------------------------
+        def __init__(self) -> None:
+            self.active: list[WebSocket] = []
 
+        async def connect(self, ws: WebSocket) -> None:
+            await ws.accept()
+            self.active.append(ws)
+            logger.info(f"Client connected. Total: {len(self.active)}")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("Wapo backend starting on ws://127.0.0.1:8765")
-    yield
-    logger.info("Wapo backend shutting down")
+        def disconnect(self, ws: WebSocket) -> None:
+            if ws in self.active:
+                self.active.remove(ws)
+            logger.info(f"Client disconnected. Total: {len(self.active)}")
 
-
-app = FastAPI(title="Wapo Backend", lifespan=lifespan)
-
-
-@app.get("/health")
-async def health():
-    return JSONResponse({"status": "ok", "connections": len(manager.active)})
-
-
-# ---------------------------------------------------------------------------
-# WebSocket Endpoint
-# ---------------------------------------------------------------------------
+        @property
+        def connection_count(self) -> int:
+            return len(self.active)
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket):
-    await manager.connect(ws)
-    try:
-        while True:
-            raw = await ws.receive_text()
-            data = json.loads(raw)
-            content = data.get("content", "")
-
-            if not content:
-                continue
-
-            # Process through LangGraph DAG
-            asyncio.create_task(_process_message(ws, content))
-
-    except WebSocketDisconnect:
-        manager.disconnect(ws)
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        manager.disconnect(ws)
+    manager = ConnectionManager()
 
 
-async def _process_message(ws: WebSocket, content: str) -> None:
-    """Run the LangGraph agent and stream status updates to the client."""
-    try:
-        # Initial state
-        initial_state: AgentState = {
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        logger.info(f"Wapo backend starting on ws://{HOST}:{PORT} (engine={DEFAULT_ENGINE})")
+        yield
+        logger.info("Wapo backend shutting down")
+
+
+    app = FastAPI(title="Wapo Backend", lifespan=lifespan)
+
+
+    @app.get("/health")
+    async def health():
+        return JSONResponse({
+            "status": "ok",
+            "connections": manager.connection_count,
+            "engine": DEFAULT_ENGINE,
+        })
+
+
+    @app.websocket("/ws")
+    async def websocket_endpoint(ws: WebSocket):
+        await manager.connect(ws)
+        try:
+            while True:
+                raw = await ws.receive_text()
+                data = json.loads(raw)
+                content = data.get("content", "")
+                if not content:
+                    continue
+
+                engine = _resolve_engine(ws.query_params.get("engine"), data.get("engine"))
+                asyncio.create_task(_process_fastapi_message(ws, content, engine))
+        except WebSocketDisconnect:
+            manager.disconnect(ws)
+        except Exception as exc:
+            logger.error(f"WebSocket error: {exc}")
+            manager.disconnect(ws)
+
+
+    async def _process_fastapi_message(ws: WebSocket, content: str, engine: str) -> None:
+        if engine == "testing":
+            await run_testing_engine(content, lambda event: _send_fastapi_json(ws, event))
+            return
+
+        if engine == "langgraph":
+            await _process_fastapi_langgraph(ws, content)
+            return
+
+        await _send_fastapi_json(ws, {
+            "type": "error",
+            "data": f"Unknown engine: {engine}",
+            "metadata": None,
+        })
+
+
+    async def _process_fastapi_langgraph(ws: WebSocket, content: str) -> None:
+        try:
+            from orchestrator import agent_graph
+        except Exception as exc:
+            await _send_fastapi_json(ws, {
+                "type": "error",
+                "data": f"LangGraph backend unavailable: {exc}",
+                "metadata": None,
+            })
+            return
+
+        initial_state = {
             "content": "",
             "messages": [{"role": "user", "content": content}],
             "findings": [],
@@ -113,69 +132,78 @@ async def _process_message(ws: WebSocket, content: str) -> None:
             "status_updates": [],
         }
 
-        # Send "thinking" status
-        await ws.send_text(json.dumps({
+        await _send_fastapi_json(ws, {
             "type": "status",
             "data": "Processing your request…",
             "metadata": None,
-        }))
+        })
 
-        # Run the graph with max_concurrency control
-        config = {"max_concurrency": 5}
-        result = await asyncio.to_thread(
-            agent_graph.invoke, initial_state, config=config
-        )
+        try:
+            config = {"max_concurrency": 5}
+            result = await asyncio.to_thread(agent_graph.invoke, initial_state, config=config)
+        except Exception as exc:
+            await _send_fastapi_json(ws, {
+                "type": "error",
+                "data": f"LangGraph execution failed: {exc}",
+                "metadata": None,
+            })
+            return
 
-        # Stream accumulated status updates
         for update in result.get("status_updates", []):
-            msg = {
+            await _send_fastapi_json(ws, {
                 "type": update.get("type", "status"),
                 "data": update.get("data", ""),
                 "metadata": update.get("metadata"),
-            }
-            await ws.send_text(json.dumps(msg))
-            await asyncio.sleep(0.05)  # Small delay for visual progression
+            })
+            await asyncio.sleep(0.05)
 
-        # Send final content if not already sent via status_updates
         final_content = result.get("content", "")
-        if final_content:
-            has_content_update = any(
-                u.get("type") == "content" for u in result.get("status_updates", [])
-            )
-            if not has_content_update:
-                await ws.send_text(json.dumps({
-                    "type": "content",
-                    "data": final_content,
-                    "metadata": None,
-                }))
+        if final_content and not any(
+            item.get("type") == "content" for item in result.get("status_updates", [])
+        ):
+            await _send_fastapi_json(ws, {
+                "type": "content",
+                "data": final_content,
+                "metadata": None,
+            })
 
-        # Report any errors
         for error in result.get("errors", []):
-            await ws.send_text(json.dumps({
+            await _send_fastapi_json(ws, {
                 "type": "error",
                 "data": error,
                 "metadata": None,
-            }))
-
-    except Exception as e:
-        logger.error(f"Processing error: {e}")
-        await ws.send_text(json.dumps({
-            "type": "error",
-            "data": f"Internal error: {str(e)}",
-            "metadata": None,
-        }))
+            })
 
 
-# ---------------------------------------------------------------------------
-# Entry Point
-# ---------------------------------------------------------------------------
+    async def _send_fastapi_json(ws: WebSocket, message: dict) -> None:
+        await ws.send_text(json.dumps(message))
+
+
+def _resolve_engine(query_engine: str | None, payload_engine: object) -> str:
+    if isinstance(payload_engine, str) and payload_engine.strip():
+        return payload_engine.strip().lower()
+
+    if isinstance(query_engine, str) and query_engine.strip():
+        return query_engine.strip().lower()
+
+    return DEFAULT_ENGINE
+
+
+def main() -> None:
+    if FastAPI is not None:
+        try:
+            import uvicorn
+        except ModuleNotFoundError:
+            logger.warning("FastAPI is installed but uvicorn is missing; using stdlib fallback server.")
+        else:
+            uvicorn.run("server:app", host=HOST, port=PORT, log_level="info")
+            return
+
+    from stdlib_websocket_server import run_stdlib_server
+
+    logger.info("FastAPI/Uvicorn unavailable; starting stdlib backend fallback.")
+    asyncio.run(run_stdlib_server(host=HOST, port=PORT, default_engine=DEFAULT_ENGINE))
+
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "server:app",
-        host="127.0.0.1",
-        port=8765,
-        log_level="info",
-    )
+    main()

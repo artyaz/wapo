@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	    Base Info.plist used in conjunction with GENERATE_INFOPLIST_FILE=YES:
+	    Xcode merges the auto-generated bundle keys (CFBundleIdentifier,
+	    CFBundleExecutable, NSPrincipalClass, LSMinimumSystemVersion, …) on
+	    top of these entries. Only put keys here that the build setting
+	    generator doesn't already inject.
+
+	    ATS exceptions so users can point the app at a self-hosted backend
+	    over plain HTTP (Hermes Agent on http://127.0.0.1:8642, LAN IPs,
+	    custom domains, etc.). The app only talks to backends the user
+	    explicitly configures in Settings.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>127.0.0.1</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>
