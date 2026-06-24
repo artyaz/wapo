@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# environment / secrets
+.env
+.env.local
+*.local.json
+
+# Xcode build output
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Xcode per-user state (never share these)
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+
+# Swift Package Manager local checkouts (Package.resolved is kept on purpose)
+.build/
+.swiftpm/xcode/
