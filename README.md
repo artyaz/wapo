@@ -86,7 +86,6 @@ same deal with the python tools (`sed`/`awk` file editing through `sponge`, tmux
 cd Backend
 python3 -m unittest discover -p "test_*.py"
 ```
+<img width="3201" height="273" alt="image" src="https://github.com/user-attachments/assets/93cdde99-e459-42d8-8eed-ebc5b5441303" />
 
-## license
 
-mit, see [LICENSE.txt](LICENSE.txt).
