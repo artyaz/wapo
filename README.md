@@ -1,4 +1,5 @@
 # wapo
+<img width="2093" height="707" alt="image" src="https://github.com/user-attachments/assets/918fed70-38f0-4759-911e-8a47468229e8" />
 
 wapo is a little menu bar app for macos that puts an ai agent behind a floating chat window. you hit the menu bar item, a glass panel slides in, you type, it streams back. there's a swift app doing the ui and a python backend doing the actual agent work.
 
